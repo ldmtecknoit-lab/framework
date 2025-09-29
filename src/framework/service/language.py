@@ -160,7 +160,10 @@ async def resource(lang, **constants):
     """
     Carica una risorsa (modulo Python o file JSON) dinamicamente con tracciamento degli errori.
     """
-    path = constants.get("path", "")[1:]
+    path = constants.get("path", "")
+    # Remove leading slash if present
+    if path.startswith('/'):
+        path = path[1:]
     adapter = constants.get("adapter", 'NaM').replace('.test', '')
     
     try:

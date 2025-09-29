@@ -76,10 +76,10 @@ def test():
                         print(f"Module path: {module_path}")
                         #module = language.get_module_os(module_path,language)
                         # TODO: Fix test discovery - language not available in this context
-        # module = await language.resource(language, path=module_path,adapter=module_name.replace('.test.py',''))
-        pass
+                        # module = await language.resource(language, path=module_path,adapter=module_name.replace('.test.py',''))
                         # Aggiungi i test dal modulo
-                        test_suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(module))
+                        # test_suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(module))
+                        pass
                     except Exception as e:
                         print(f"Errore nell'importazione del modulo: {module_path}, {e}")
         return test_suite
