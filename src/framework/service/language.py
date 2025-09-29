@@ -17,6 +17,8 @@ import traceback
 import types # Importato per la gestione dinamica dei moduli
 
 from cerberus import Validator, TypeDefinition, errors
+import inspect
+from typing import Dict, Callable, Any
 
 # --- 1. Eccezione per la Tracciabilità degli Errori ---
 
@@ -36,7 +38,7 @@ class ResourceLoadError(Exception):
 
 # --- 2. Funzioni Helper per la Logica Specifica e il Caricamento ---
 
-async def _load_test_contract_and_export(lang: any, test_path: str, adapter: str) -> tuple[Dict, Callable]:
+async def _load_test_contract_and_export(lang: Any, test_path: str, adapter: str) -> tuple[Dict[str, Any], Callable[..., Any]]:
     """
     Carica il contratto (*.test.py) per estrarre 'CONTRACT_DEFINITIONS' e la funzione 'EXPORT_FUNCTION'.
     Utilizza lang.backend per l'I/O.
@@ -278,9 +280,11 @@ def extract_params(s):
         return {}
 # ... (restanti funzioni come convert, generate_identifier, time_now_utc, wildcard_match, ...)
 
-def convert(data,ttype):
-    s = s.strip()
-    if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')): s = s[1:-1]
+def convert(data, ttype):
+    # Convert data to string first
+    s = str(data).strip()
+    if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')): 
+        s = s[1:-1]
     return ast.literal_eval(s)
 
 def generate_identifier(): return str(uuid.uuid4())
@@ -514,7 +518,7 @@ def _get_next_schema(schema, key):
         return schema.get(key)
     return None
 
-def _check_path_in_schema(path: str, schema) -> bool:
+def _check_path_in_schema(path: str, schema: Any) -> bool:
     if not isinstance(path, str) or not path: return False
     if not isinstance(schema, dict) or not schema: return False
     current_schema_node = schema
@@ -527,7 +531,7 @@ def _check_path_in_schema(path: str, schema) -> bool:
         if not is_last_chunk: current_schema_node = next_schema_part
     return True
 
-def put(data: dict, path: str, value: any, schema: dict) -> dict:
+def put(data: dict, path: str, value: Any, schema: dict) -> dict:
     if not isinstance(data, dict): raise TypeError("Il dizionario iniziale deve essere di tipo dict.")
     if not isinstance(path, str) or not path: raise ValueError("Il dominio deve essere una stringa non vuota.")
     if not isinstance(schema, dict) or not schema: raise ValueError("Lo schema deve essere un dizionario valido.")

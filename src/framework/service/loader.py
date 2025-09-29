@@ -1,7 +1,9 @@
 import os
 import sys
 import asyncio
-from kink import di 
+from kink import di
+# Import language module
+import framework.service.language as language 
 
 async def bootstrap() -> None:
     print("Bootstrapping the loader...###########################################################")
@@ -43,7 +45,7 @@ async def bootstrap() -> None:
         # Unisce env e cookies
         config = language.get_confi(**{**env, **{"session":session,"identifier":identifier}})
     else:
-        config = language.get_confi(**env|{"session":session,})
+        config = language.get_confi(**{**env, "session":session})
 
     print(config, "config")
 

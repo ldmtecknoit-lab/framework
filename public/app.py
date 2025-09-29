@@ -3,13 +3,19 @@ import sys
 import os
 
 if sys.platform == 'emscripten':
-    run = load_main(None,area="framework",service='service',adapter='run')
+    # WebAssembly/browser environment - not supported in this setup
+    raise NotImplementedError("WebAssembly environment not supported in this configuration")
 else:
     cwd = os.getcwd()
     sys.path.insert(1, cwd+'/src')
     import framework.service.language as language
-
-    run = language.load_main(language,area="framework",service='service',adapter='run')
+    
+    # Use resource method instead of load_main
+    import asyncio
+    async def get_run_module():
+        return await language.resource(language, path="framework/service/run.py", adapter="run")
+    
+    run = asyncio.run(get_run_module())
 
 #modulo = ['run','language']
 
