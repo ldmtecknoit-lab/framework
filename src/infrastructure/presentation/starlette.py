@@ -701,7 +701,7 @@ class adapter(presentation.port):
 
         middleware = [
             Middleware(SessionMiddleware, session_cookie="session_state",secret_key=self.config.get('project',{}).get('key', 'default_key')),
-            Middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*']),
+            Middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'], allow_credentials=True),
             Middleware(NoCacheMiddleware),
             #Middleware(CSRFMiddleware, secret=self.config['project']['key']),
             #Middleware(AuthorizationMiddleware, manager=defender)

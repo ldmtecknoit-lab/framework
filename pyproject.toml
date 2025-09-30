@@ -57,7 +57,7 @@ password = ""
 [presentation.web]
 adapter = "starlette"
 host = "0.0.0.0"
-port = "8000"
+port = "5000"
 route = "web.xml"
 #ssl_keyfile = "key.pem"
 #ssl_certfile = "cert.pem"
