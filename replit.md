@@ -69,3 +69,9 @@ The SottoMonte Framework uses:
 - Simplified approach bypasses this requirement while maintaining core functionality
 - Web application displays status page showing successful configuration
 - Ready for production deployment via Replit's autoscale platform
+
+docker build `
+>>     --build-arg BUILD_TIMESTAMP="$(Get-Date -UFormat %s)" `
+>>     -t framework .
+
+docker run -d -p 8000:8000 --name framework-app framework
