@@ -246,6 +246,125 @@ async def bootstrap_optimized() -> None:
             # 1. Messaggio informativo per la debuggabilità
             logger.debug(f"L'elemento {item_name} non ha un metodo 'loader'. Saltato.")
 
+
+
+async def bootstrap_optimized() -> None:
+    """
+    Funzione principale di bootstrap che orchestra il caricamento del framework.
+    Contiene un Catch-All finale per garantire la tracciabilità di ogni crash.
+    """
+    
+    # 🎯 PUNTO CHIAVE: L'unico try...except avvolge l'intera logica.
+    try:
+        print("Bootstrapping the loader...###########################################################")
+        logger.info("Avvio del processo di inizializzazione del Framework. Controllo ambiente...")
+        
+        env_config: Dict[str, Any] = dict(os.environ)
+        session_data: Dict[str, Any] = {}
+        identifier_val: str = 'None'
+        
+        await installa_dipendenze_browser()
+        logger.info("Dipendenze Pyodide/Browser verificate e installate (se necessario).")
+        
+        # Gestione Condizionale della Configurazione Browser/Server
+        if sys.platform == "emscripten":
+            import js # Accesso al DOM
+            
+            cookies: Dict[str, str] = parse_browser_cookies(str(js.document.cookie))
+            session_str = cookies.get('session', 'None')
+            identifier_val = cookies.get('session_identifier', 'None')
+            session_data = tenta_recupero_sessione(session_str)
+            
+            config_params = {**env_config, "session": session_data, "identifier": identifier_val}
+            platform_type = "Browser (Pyodide)"
+        else:
+            config_params = env_config | {"session": session_data}
+            platform_type = "Server (Standard)"
+            
+        config = language.get_confi(**config_params)
+        logger.info(f"Configurazione caricata con successo (Ambiente: {platform_type}).")
+        
+        # --- FASE DI CARICAMENTO MANAGER ESSENZIALI ---
+        await language.load_manager(language, provider="message", name="messenger", path="framework/manager/messenger.py")
+        await language.load_manager(language, provider="actuator", name="executor", path="framework/manager/executor.py")
+        logger.info("Manager di base (Messenger, Executor) caricati e pronti.")
+        
+        dependency_executor: ExecutorManager = di.get("executor")
+        if not dependency_executor:
+            raise LookupError("Il manager 'executor' non è stato trovato nel DI. Verificare l'iniezione.")
+        
+        # Manager principali (Caricamento Parallelo)
+        manager_tasks: List[asyncio.Task] = [
+            asyncio.create_task(language.load_manager(language, provider="presentation", name="presenter", path="framework/manager/presenter.py"), name="load_presenter"),
+            asyncio.create_task(language.load_manager(language, provider="authentication", name="defender", path="framework/manager/defender.py"), name="load_defender"),
+            asyncio.create_task(language.load_manager(language, provider="persistence", name="storekeeper", path="framework/manager/storekeeper.py"), name="load_storekeeper"),
+            asyncio.create_task(language.load_manager(language, provider="authentication", name="tester", path="framework/manager/tester.py"), name="load_tester"),
+        ]
+        
+        logger.info(f"Avvio del caricamento parallelo di {len(manager_tasks)} Manager...")
+        await dependency_executor.all_completed(tasks=manager_tasks) 
+        logger.info("Caricamento Manager completato. System-DI pronto.")
+
+        # --- FASE DI CARICAMENTO PROVIDER ---
+        provider_tasks: List[asyncio.Task] = []
+        MODULI_PRINCIPALI = ["presentation", "persistence", "message", "authentication", "actuator"]
+        logger.info("Preparazione al caricamento dei Provider d'Infrastruttura...")
+        
+        for module_name in MODULI_PRINCIPALI:
+            if module_name in config and isinstance(config.get(module_name), dict):
+                for driver_name, setting_data in config[module_name].items():
+                    adapter_name = setting_data.get("adapter")
+                    if not adapter_name:
+                        logger.error(f"Configurazione incompleta per '{module_name}/{driver_name}': Manca 'adapter'.")
+                        continue
+                    
+                    payload_data = {**setting_data, "profile": driver_name, "project": config.get("project", "default")}
+                    
+                    task = asyncio.create_task(
+                        language.load_provider(language, path=f"infrastructure/{module_name}/{adapter_name}.py", area="infrastructure", service=module_name, adapter=adapter_name, payload=payload_data),
+                        name=f"load_provider_{module_name}_{driver_name}"
+                    )
+                    provider_tasks.append(task)
+                    logger.debug(f"Task creata: Provider {module_name} / Adattatore {adapter_name} ('{driver_name}').")
+            else:
+                logger.debug(f"Modulo '{module_name}' non configurato o non è un dizionario. Saltato.")
+
+        logger.info(f"Avvio del caricamento parallelo di {len(provider_tasks)} Provider...")
+        await dependency_executor.all_completed(tasks=provider_tasks)
+        logger.info("Caricamento di tutti i Provider completato.")
+
+        # --- FASE DI AVVIO DEGLI ELEMENTI DI PRESENTAZIONE ---
+        presentation_elements: List[Any] = di["presentation"]
+        event_loop = asyncio.get_event_loop()
+        logger.info(f"Avvio dei caricatori ({len(presentation_elements)}) per gli elementi di Presentazione.")
+
+        for item in presentation_elements:
+            item_name = getattr(item, '__class__', item)
+            if hasattr(item, "loader"):
+                try:
+                    item.loader(loop=event_loop)
+                    logger.debug(f"Loader eseguito con successo per {item_name}.")
+                except Exception as e:
+                    logger.error(f"ERRORE GRAVE: Il 'loader' dell'elemento {item_name} ha fallito. Dettaglio: {e}")
+            else:
+                logger.debug(f"L'elemento {item_name} non ha un metodo 'loader'. Saltato.")
+
+        logger.info("Framework avviato con successo. Sistema pronto e operativo.")
+
+    # 🛑 CATTURA TUTTI GLI ERRORI (Catch-All Universale)
+    except Exception as e:
+        # Questo blocco cattura tutti i fallimenti inaspettati (es. LookupError, KeyError non gestiti)
+        
+        logger.critical(
+            f"ERRORE FATALE e INASPETTATO durante il bootstrap! Causa: {type(e).__name__}. L'applicazione non può avviarsi. ",
+            exc_info=True, # Logga il traceback completo
+            stack_info=True 
+        )
+        
+        # Rilancia per bloccare l'applicazione
+        raise FrameworkInitializationError(
+            f"Inizializzazione fallita. Errore: {type(e).__name__}"
+        ) from e
 '''import os
 import sys
 import asyncio
