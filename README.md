@@ -245,6 +245,8 @@ Risorse aggiuntive e guide.
 * [ ] Creare e gestire progetti tramite una piattaforma dedicata.
 * [ ] Utilizzare TypeScript per la zona applicativa.
 * [ ] Trasformare il codice JavaScript in moduli utilizzabili in Python per la persistenza con Supabase.
+* [ ] Support export per i test.
+* [ ] Test obbligatori.
 
 ## 📄 Licenza
 

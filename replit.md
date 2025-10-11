@@ -75,3 +75,7 @@ docker build `
 >>     -t framework .
 
 docker run -d -p 8000:8000 --name framework-app framework
+
+
+source venv/bin/activate
+python3 public/main.py

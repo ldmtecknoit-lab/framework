@@ -1,13 +1,11 @@
 import asyncio
 
 resources = {
-    'factory': 'framework/service/factory.py',
     'flow': 'framework/service/flow.py',
-    'test': 'framework/service/test.py',
     'model': 'framework/schema/model.json',
 }
 
-class Test(test.test):
+class TestModule():
 
     def setUp(self):
         
@@ -80,7 +78,6 @@ class Test(test.test):
 
         await self.check_cases(language.put, success_cases) # Passa la funzione put (non language.put)
         await self.check_cases(language.put, failure_cases) # Passa la funzione put
-
 
     async def test_extract_params(self):
         success = [
@@ -185,3 +182,31 @@ class Test(test.test):
 
         await self.check_cases(language.translation, success_cases)
         await self.check_cases(language.translation, failure)
+
+    async def test_get_config(self):
+        """Verifica che language.get recuperi correttamente i valori da percorsi validi."""
+        success = [
+            {'args':({'name': 'test_name'}, 'name'),'equal':'test_name'},
+            {'args':({'url': {'path': '/api'}}, 'url.path', ),'equal':'/api'},
+            {'args':({'url': {'path': '/api', 'query': {'id': 123}}}, 'url.query.id'),'equal':123},
+            {'args':({'data': [1, 2, 3]}, 'data.1'),'equal':2},
+            {'args':({'data': [{'item': 'value'}]}, 'data.0.item'),'equal':'value'},
+            {'args':({'nested': {'key': 'value'}}, 'nested.key'),'equal':'value'},
+            {'args':({'list': [1, 2, 3]}, 'list.2'),'equal':3},
+            {'args':({'mixed': {'a': 1, 'b': [10, 20]}}, 'mixed.b.1'),'equal':20},
+            {'args':({'complex': {'a': {'b': 1}}}, 'complex.a.b'),'equal':1},
+            {'args':({'empty_dict': {}}, 'empty_dict.non_existent', 'default_value'),'equal':'default_value'}, # Chiave inesistente con default
+            {'args':({}, 'none_value', 'fallback'),'equal':'fallback'}, # Accesso a None con default
+            {'args':({'list_data': [10, 20]}, 'list_data.0'),'equal':10}, # Accesso a lista con indice
+            {'args':({'list_data': [{'item': 'val'}]}, 'list_data.0.item'),'equal':'val'}, # Accesso a lista di dizionari
+            {'args':({}, 'a'),'equal':None}, # Verifica None esplicito come valore
+            {'args':(['ciao'], '0'),'equal':'ciao'}, # Accesso a lista con indice
+
+        ]
+
+        failure = [
+            {'args':(123,'id'), 'error': TypeError}, # Accesso a un intero, dovrebbe fallire
+        ]
+
+        await self.check_cases(language.get, success)
+        await self.check_cases(language.get, failure)

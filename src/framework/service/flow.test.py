@@ -1,35 +1,31 @@
 from unittest import IsolatedAsyncioTestCase
 
-# Contract definitions are in the AdapterTest class
+class TestModule(IsolatedAsyncioTestCase):
 
-def EXPORT_FUNCTION(module):
-    """
-    Export function to filter and expose the module's public API
-    """
-    # Create a new module with only the public interface
-    import types
-    exported_module = types.ModuleType('flow_exported')
-    
-    # Export the public functions
-    if hasattr(module, 'asynchronous'):
-        exported_module.asynchronous = module.asynchronous
-    if hasattr(module, 'synchronous'):
-        exported_module.synchronous = module.synchronous
-        
-    return exported_module
+    async def test_asynchronous(self):
+        """Verifica che language.get recuperi correttamente i valori da percorsi validi."""
+        success = [
+            {'args':(language),'kwargs':{'path':"framework/service/run.py"},'type':types.ModuleType},
+            {'args':(language),'kwargs':{'path':"framework/schema/model.json"},'equal':model},
+        ]
 
-class AdapterTest(IsolatedAsyncioTestCase):
-    # Contract definitions at class level
-    CONTRACT_DEFINITIONS = {
-        'asynchronous': {
-            'type': 'callable',
-            'required': True
-        },
-        'synchronous': {
-            'type': 'callable',
-            'required': False
-        }
-    }
-    
-    def __init__(self, *args,**kwargs):
-        super(AdapterTest, self).__init__(*args, **kwargs)  # Chiamata al costruttore di unittest.TestCase
+        failure = [
+            {'args':(language),'kwargs':{'path':"framework/service/NotFound.py"}, 'error': FileNotFoundError},
+        ]
+
+        await self.check_cases(language.resource, success)
+        await self.check_cases(language.resource, failure)
+
+    async def test_synchronous(self):
+        """Verifica che language.get recuperi correttamente i valori da percorsi validi."""
+        success = [
+            {'args':(language),'kwargs':{'path':"framework/service/run.py"},'type':types.ModuleType},
+            {'args':(language),'kwargs':{'path':"framework/schema/model.json"},'equal':model},
+        ]
+
+        failure = [
+            {'args':(language),'kwargs':{'path':"framework/service/NotFound.py"}, 'error': FileNotFoundError},
+        ]
+
+        await self.check_cases(language.resource, success)
+        await self.check_cases(language.resource, failure)

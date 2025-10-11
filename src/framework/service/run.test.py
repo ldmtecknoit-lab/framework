@@ -1,43 +1,28 @@
-from unittest import IsolatedAsyncioTestCase
+import asyncio
 
-# Contract definitions are now in the AdapterTest class
+imports = {
+    'factory': 'framework/service/factory.py',
+    'flow': 'framework/service/flow.py',
+    'contract': 'framework/service/contract.py',
+    'model': 'framework/schema/model.json',
+}
 
-def EXPORT_FUNCTION(module):
-    """
-    Export function to filter and expose the module's public API
-    """
-    # Create a new module with only the public interface
-    import types
-    exported_module = types.ModuleType('run_exported')
-    
-    # Export the public functions
-    if hasattr(module, 'application'):
-        exported_module.application = module.application
-    if hasattr(module, 'test'):
-        exported_module.test = module.test
-    if hasattr(module, 'resources'):
-        exported_module.resources = module.resources
+class TestModule():
+
+    def setUp(self):
         
-    return exported_module
+        print("Setting up the test environment...")
 
-class AdapterTest(IsolatedAsyncioTestCase):
-    # Contract definitions at class level
-    CONTRACT_DEFINITIONS = {
-        'application': {
-            'type': 'callable',
-            'required': True
-        },
-        'test': {
-            'type': 'callable',
-            'required': False
-        },
-        'resources': {
-            'type': 'dict',
-            'required': False
-        }
-    }
-    
-    def __init__(self, *args,**kwargs):
-        super(AdapterTest, self).__init__(*args, **kwargs)  # Chiamata al costruttore di unittest.TestCase
-        #config = {'adapter':"api",'url':"https://api.github.com",'token': ""}
-        #self.test = adapter(config=config)  # Inizializza il tuo adapter qui
+    async def test_application(self):
+        """Verifica che language.get recuperi correttamente i valori da percorsi validi."""
+        success = [
+            {'args':(language),'kwargs':{'path':"framework/service/run.py"},'type':types.ModuleType},
+            {'args':(language),'kwargs':{'path':"framework/schema/model.json"},'equal':model},
+        ]
+
+        failure = [
+            {'args':(language),'kwargs':{'path':"framework/service/NotFound.py"}, 'error': FileNotFoundError},
+        ]
+
+        await self.check_cases(language.resource, success)
+        await self.check_cases(language.resource, failure)
